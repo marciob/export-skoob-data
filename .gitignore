@@ -1,0 +1,12 @@
+# Never commit your token or your exported library
+.env
+output/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
