@@ -1,76 +1,81 @@
 # export-skoob-data
 
-Export your entire [Skoob](https://www.skoob.com.br) library to clean JSON —
-every shelf, every book, de-duplicated, with no third-party services and
-**zero dependencies** (Python 3.8+ standard library only).
+Exporte toda a sua biblioteca do [Skoob](https://www.skoob.com.br) para
+JSON limpo — todas as prateleiras, todos os livros, sem duplicatas, sem
+serviços de terceiros e com **zero dependências** (apenas a biblioteca
+padrão do Python 3.8+).
 
-Skoob has no official export. This talks to the same private API the Skoob
-web app uses (`prd-api.skoob.com.br`), read-only (`GET` only — it never
-modifies your account).
+O Skoob não tem exportação oficial. Esta ferramenta usa a mesma API
+privada que o site do Skoob usa (`prd-api.skoob.com.br`), somente
+leitura (apenas `GET` — nunca altera a sua conta).
 
-## What you get
+## O que você obtém
 
 ```
 output/
-  books.json                 every unique book, de-duplicated, each tagged
-                              with the shelves it belongs to
-  raw/{type}__{filter}.json   one file per shelf, exactly as the API returns
+  books.json                 todos os livros únicos, sem duplicatas, cada
+                              um marcado com as prateleiras a que pertence
+  raw/{type}__{filter}.json   um arquivo por prateleira, exatamente como a
+                              API retorna
 ```
 
-Each book includes: `title`, `author`, `publisher`, `year`, `pages`,
+Cada livro inclui: `title`, `author`, `publisher`, `year`, `pages`,
 `cover_filename`, `slug`, `status`, `progress`, `finished_at`, `book_id`,
-`edition_id`, plus `shelves` (which shelves it's on), `bookshelf_types`,
-and `in_library`.
+`edition_id`, além de `shelves` (em quais prateleiras está),
+`bookshelf_types` e `in_library`.
 
-> Note: the bookshelf API does **not** return ISBN, synopsis, or genres —
-> those live on a separate per-book endpoint and are intentionally out of
-> scope here to keep this tool fast and lightweight.
+> Observação: a API da estante **não** retorna ISBN, sinopse ou gêneros —
+> esses dados ficam em um endpoint separado por livro e foram deixados de
+> fora de propósito, para manter esta ferramenta rápida e leve.
 
-## Requirements
+## Requisitos
 
-- Python 3.8 or newer. Nothing else — no `pip install`.
+- Python 3.8 ou mais recente. Nada além disso — sem `pip install`.
 
-## Getting your Skoob token
+## Como obter seu token do Skoob
 
-Skoob authenticates API calls with a JWT that lives in an **HttpOnly
-cookie**, so it can't be read from storage — you have to grab it from a
-real request your browser makes. It expires roughly **15 days** after
-issue, so you'll repeat this when it stops working.
+O Skoob autentica as chamadas de API com um JWT que fica em um **cookie
+HttpOnly**, então ele não pode ser lido do armazenamento — você precisa
+capturá-lo de uma requisição real feita pelo seu navegador. Ele expira em
+cerca de **15 dias** após ser emitido, então você vai repetir este passo
+quando ele parar de funcionar.
 
-1. Open <https://www.skoob.com.br/> and **log in**.
-2. Open DevTools → **Console** (`F12`, or `Cmd+Option+J` / `Ctrl+Shift+J`).
-3. Paste the entire contents of [`get-jwt.js`](./get-jwt.js) and press Enter.
-   You'll see `Interceptor armed. Now click any shelf in the sidebar.`
-4. **Click any shelf** in the left sidebar (e.g. *Lido*, *Lendo*,
-   *Quero ler*), or open your bookshelf page.
-5. The console prints `SKOOB JWT: eyJ...` and copies it to your clipboard.
+1. Abra <https://www.skoob.com.br/> e **faça login**.
+2. Abra o DevTools → **Console** (`F12`, ou `Cmd+Option+J` /
+   `Ctrl+Shift+J`).
+3. Cole todo o conteúdo de [`get-jwt.js`](./get-jwt.js) e pressione Enter.
+   Você verá `Interceptor armed. Now click any shelf in the sidebar.`
+4. **Clique em qualquer prateleira** no menu lateral esquerdo (ex.: *Lido*,
+   *Lendo*, *Quero ler*), ou abra a página da sua estante.
+5. O console exibe `SKOOB JWT: eyJ...` e copia o token para a área de
+   transferência.
 
-The snippet is read-only: it just observes one outgoing request to read
-the `Authorization` header, then removes itself. It never sends, stores,
-or transmits anything.
+O script é somente leitura: ele apenas observa uma requisição de saída
+para ler o cabeçalho `Authorization` e depois se remove. Ele nunca envia,
+armazena ou transmite nada.
 
-Your `user_id` is read automatically from the token — you don't need to
-find it yourself.
+Seu `user_id` é lido automaticamente a partir do token — você não precisa
+descobri-lo manualmente.
 
-## Usage
+## Uso
 
 ```bash
-git clone <your-fork-url>
+git clone <url-do-seu-fork>
 cd export-skoob-data
 
 cp .env.example .env
-# open .env and paste your token after SKOOB_JWT=
+# abra o .env e cole seu token depois de SKOOB_JWT=
 
 python3 export_skoob.py
 ```
 
-Or without a file:
+Ou sem um arquivo:
 
 ```bash
 SKOOB_JWT="eyJ..." python3 export_skoob.py
 ```
 
-Expected output:
+Saída esperada:
 
 ```
 Token OK — user_id 6xxxxxxxxxxxxxxxxxxxxxxx, ~12.4 day(s) until expiry.
@@ -82,38 +87,44 @@ Done. 1062 unique books.
   -> output/raw/  (one file per shelf)
 ```
 
-## Privacy & safety
+## Privacidade e segurança
 
-- **Your token and your exported data are never committed.** `.env` and
-  `output/` are git-ignored. Only the code is tracked.
-- Read-only: the tool and the console snippet only issue `GET` requests.
-- The token grants access to your account — treat it like a password.
-  Don't paste it into issues, logs, or screenshots. If you ever leak it,
-  log out of Skoob (or wait ≤15 days) to invalidate it.
+- **Seu token e seus dados exportados nunca são versionados.** `.env` e
+  `output/` estão no `.gitignore`. Apenas o código é versionado.
+- Somente leitura: a ferramenta e o script do console só fazem
+  requisições `GET`.
+- O token dá acesso à sua conta — trate-o como uma senha. Não cole em
+  issues, logs ou capturas de tela. Se vazá-lo, saia do Skoob (ou espere
+  ≤15 dias) para invalidá-lo.
 
-## How it works
+## Como funciona
 
-- Iterates every `bookshelf_type` Skoob accepts (`book`, `magazine`) and
-  every shelf `filter`, paginating each to completion.
-- The API's `total_items` is authoritative; the tool paginates until a
-  short page signals the end, then verifies the collected count.
-- `filter=all` is the master library list; shelves are **not** mutually
-  exclusive (a book can be in `read`, `rated`, and `owned` at once), so
-  membership is recorded per shelf and `all` is tracked as `in_library`.
+- Percorre todos os `bookshelf_type` que o Skoob aceita (`book`,
+  `magazine`) e todos os `filter` de prateleira, paginando cada um até o
+  fim.
+- O `total_items` da API é a fonte autoritativa; a ferramenta pagina até
+  uma página curta indicar o fim e então confere a contagem coletada.
+- `filter=all` é a lista mestra da biblioteca; as prateleiras **não** são
+  mutuamente exclusivas (um livro pode estar em `read`, `rated` e `owned`
+  ao mesmo tempo), então a associação é registrada por prateleira e `all`
+  é rastreado como `in_library`.
 
-## Limitations
+## Limitações
 
-- Token expires (~15 days) — re-grab it when you get an auth error.
-- No ISBN/synopsis/genres (separate endpoint, out of scope here).
-- User-created custom shelves/tags are not exposed by Skoob's API; only
-  the built-in shelves are exported.
-- Unofficial API: Skoob may change or restrict it at any time.
+- O token expira (~15 dias) — capture um novo quando receber um erro de
+  autenticação.
+- Sem ISBN/sinopse/gêneros (endpoint separado, fora do escopo aqui).
+- Prateleiras/tags personalizadas criadas pelo usuário não são expostas
+  pela API do Skoob; apenas as prateleiras nativas são exportadas.
+- API não oficial: o Skoob pode alterá-la ou restringi-la a qualquer
+  momento.
 
-## Disclaimer
+## Aviso legal
 
-Independent project, not affiliated with or endorsed by Skoob. Intended
-for exporting **your own** data. Use responsibly and at your own risk.
+Projeto independente, sem afiliação ou endosso do Skoob. Destinado a
+exportar **os seus próprios** dados. Use com responsabilidade e por sua
+conta e risco.
 
-## License
+## Licença
 
-MIT — see [LICENSE](./LICENSE).
+MIT — veja [LICENSE](./LICENSE).
