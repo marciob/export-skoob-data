@@ -44,15 +44,23 @@ quando ele parar de funcionar.
 2. Abra o DevTools → **Console** (`F12`, ou `Cmd+Option+J` /
    `Ctrl+Shift+J`).
 3. Cole todo o conteúdo de [`get-jwt.js`](./get-jwt.js) e pressione Enter.
-   Você verá `Interceptor armed. Now click any shelf in the sidebar.`
+   Você verá `Interceptor armed (fetch + XHR). Now click any shelf...`.
 4. **Clique em qualquer prateleira** no menu lateral esquerdo (ex.: *Lido*,
    *Lendo*, *Quero ler*), ou abra a página da sua estante.
-5. O console exibe `SKOOB JWT: eyJ...` e copia o token para a área de
-   transferência.
+5. O console exibe `SKOOB JWT: eyJ...` e copia o token (já sem o prefixo
+   `Bearer `) para a área de transferência.
 
 O script é somente leitura: ele apenas observa uma requisição de saída
 para ler o cabeçalho `Authorization` e depois se remove. Ele nunca envia,
 armazena ou transmite nada.
+
+> ⚠️ **Não apareceu nenhum `SKOOB JWT:` (e a página da estante mostra
+> "Ops, algo deu errado")?** Quase sempre é um **bloqueador no navegador**
+> (uBlock, AdGuard, Privacy Badger, antivírus com proteção web, etc.)
+> barrando o host `prd-api.skoob.com.br` — o erro
+> `net::ERR_BLOCKED_BY_CLIENT` aparece no console. Se o host é bloqueado,
+> **nenhuma requisição é feita**, então não há cabeçalho `Authorization`
+> para capturar. Veja [Solução de problemas](#solução-de-problemas).
 
 Seu `user_id` é lido automaticamente a partir do token — você não precisa
 descobri-lo manualmente.
@@ -108,6 +116,46 @@ Done. 1062 unique books.
   mutuamente exclusivas (um livro pode estar em `read`, `rated` e `owned`
   ao mesmo tempo), então a associação é registrada por prateleira e `all`
   é rastreado como `in_library`.
+
+## Solução de problemas
+
+### `ERR_BLOCKED_BY_CLIENT` / a estante mostra "Ops, algo deu errado"
+
+Um **bloqueador do lado do cliente** está barrando o host
+`prd-api.skoob.com.br`. É a causa mais comum de o `get-jwt.js` "não fazer
+nada": ele arma o interceptador, mas a requisição nunca sai, então não há
+token para capturar. O próprio site também fica quebrado (a estante não
+carrega), porque ele depende da mesma API.
+
+Tente, em ordem:
+
+1. **Desative o bloqueador para `skoob.com.br`** (uBlock, AdGuard, Privacy
+   Badger, AdBlock, Ghostery, DuckDuckGo) e **recarregue**. A estante
+   carregar os livros = bloqueio resolvido.
+2. **Pode haver mais de uma extensão.** Desativar só o uBlock pode não
+   bastar — antivírus com proteção web (Malwarebytes, Avast, Kaspersky,
+   Norton) e extensões de privacidade/VPN também causam isso.
+3. **Use outro navegador sem essas extensões** (ex.: **Firefox**) ou uma
+   **janela anônima**. Foi assim que este projeto foi validado: o Firefox,
+   sem as extensões do Chrome, capturou o token de primeira.
+   - No Firefox, antes de colar no console, digite `allow pasting` e
+     Enter (proteção anti-self-XSS).
+4. **Se bloquear até no Firefox/anônimo, não é extensão** — é
+   sistema/rede: VPN, **filtro de DNS** (NextDNS, AdGuard DNS, Pi-hole,
+   ControlD), firewall ou antivírus. Permita `prd-api.skoob.com.br` lá.
+
+Observação: o `export_skoob.py` roda no **terminal**, fora do navegador,
+então esses bloqueios **não** o afetam — basta capturar o token uma vez.
+
+### Capturar o token pela aba Network (sem console, sem script)
+
+Alternativa ao `get-jwt.js`, útil se o console estiver bloqueando colar:
+
+1. DevTools → aba **Network**, filtre por `prd-api`.
+2. Recarregue a estante ou clique numa prateleira.
+3. Clique numa requisição para `prd-api.skoob.com.br` → painel
+   **Headers** → **Request Headers** → copie o valor de
+   `Authorization` (o `eyJ...`, sem o `Bearer `).
 
 ## Limitações
 
